@@ -1,112 +1,160 @@
-import { Logger, NotificationTypes } from '@medusajs/framework/types'
-import { AbstractNotificationProviderService, MedusaError } from '@medusajs/framework/utils'
-import { Resend, CreateEmailOptions } from 'resend'
-import { ReactNode } from 'react'
-import { generateEmailTemplate } from '../templates'
+import { loadEnv, Modules, defineConfig } from '@medusajs/utils';
+import {
+  ADMIN_CORS,
+  AUTH_CORS,
+  BACKEND_URL,
+  COOKIE_SECRET,
+  DATABASE_URL,
+  JWT_SECRET,
+  REDIS_URL,
+  RESEND_API_KEY,
+  RESEND_FROM_EMAIL,
+  SENDGRID_API_KEY,
+  SENDGRID_FROM_EMAIL,
+  SHOULD_DISABLE_ADMIN,
+  STORE_CORS,
+  STRIPE_API_KEY,
+  STRIPE_WEBHOOK_SECRET,
+  WORKER_MODE,
+  MINIO_ENDPOINT,
+  MINIO_ACCESS_KEY,
+  MINIO_SECRET_KEY,
+  MINIO_BUCKET,
+  MEILISEARCH_HOST,
+  MEILISEARCH_ADMIN_KEY
+} from 'lib/constants';
 
-type InjectedDependencies = {
-  logger: Logger
-}
+// Загружаем переменные окружения
+loadEnv(process.env.NODE_ENV, process.cwd());
 
-interface ResendServiceConfig {
-  apiKey: string
-  from: string
-}
-
-export interface ResendNotificationServiceOptions {
-  api_key: string
-  from: string
-}
-
-type NotificationEmailOptions = Omit<
-  CreateEmailOptions,
-  'to' | 'from' | 'react' | 'html' | 'attachments'
->
-
-/**
- * Service to handle email notifications using the Resend API.
- */
-export class ResendNotificationService extends AbstractNotificationProviderService {
-  static identifier = "RESEND_NOTIFICATION_SERVICE"
-  protected config_: ResendServiceConfig // Configuration for Resend API
-  protected logger_: Logger // Logger for error and event logging
-  protected resend: Resend // Instance of the Resend API client
-
-  constructor({ logger }: InjectedDependencies, options: ResendNotificationServiceOptions) {
-    super()
-    this.config_ = {
-      apiKey: options.api_key,
-      from: options.from
+const medusaConfig = {
+  projectConfig: {
+    databaseUrl: DATABASE_URL,
+    databaseLogging: false,
+    redisUrl: REDIS_URL,
+    workerMode: WORKER_MODE,
+    http: {
+      adminCors: ADMIN_CORS,
+      authCors: AUTH_CORS,
+      storeCors: STORE_CORS,
+      jwtSecret: JWT_SECRET,
+      cookieSecret: COOKIE_SECRET
     }
-    this.logger_ = logger
-    this.resend = new Resend(this.config_.apiKey)
-  }
-
-  async send(
-    notification: NotificationTypes.ProviderSendNotificationDTO
-  ): Promise<NotificationTypes.ProviderSendNotificationResultsDTO> {
-    if (!notification) {
-      throw new MedusaError(MedusaError.Types.INVALID_DATA, `No notification information provided`)
-    }
-    if (notification.channel === 'sms') {
-      throw new MedusaError(MedusaError.Types.INVALID_DATA, `SMS notification not supported`)
-    }
-
-    // Generate the email content using the template
-    let emailContent: ReactNode
-
-    try {
-      emailContent = generateEmailTemplate(notification.template, notification.data)
-    } catch (error) {
-      if (error instanceof MedusaError) {
-        throw error // Re-throw MedusaError for invalid template data
+  },
+  admin: {
+    backendUrl: BACKEND_URL,
+    disable: SHOULD_DISABLE_ADMIN,
+  },
+  modules: [
+    {
+      key: Modules.FILE,
+      resolve: '@medusajs/file',
+      options: {
+        providers: [
+          ...(MINIO_ENDPOINT && MINIO_ACCESS_KEY && MINIO_SECRET_KEY ? [{
+            resolve: './src/modules/minio-file',
+            id: 'minio',
+            options: {
+              endPoint: MINIO_ENDPOINT,
+              accessKey: MINIO_ACCESS_KEY,
+              secretKey: MINIO_SECRET_KEY,
+              bucket: MINIO_BUCKET
+            }
+          }] : [{
+            resolve: '@medusajs/file-local',
+            id: 'local',
+            options: {
+              upload_dir: 'static',
+              backend_url: `${BACKEND_URL}/static`
+            }
+          }])
+        ]
       }
-      throw new MedusaError(
-        MedusaError.Types.UNEXPECTED_STATE,
-        `Failed to generate email content for template: ${notification.template}`
-      )
-    }
+    },
+    ...(REDIS_URL ? [{
+      key: Modules.EVENT_BUS,
+      resolve: '@medusajs/event-bus-redis',
+      options: {
+        redisUrl: REDIS_URL
+      }
+    },
+    {
+      key: Modules.WORKFLOW_ENGINE,
+      resolve: '@medusajs/workflow-engine-redis',
+      options: {
+        redis: {
+          url: REDIS_URL,
+        }
+      }
+    }] : []),
+    {
+      key: Modules.NOTIFICATION,
+      resolve: '@medusajs/notification',
+      options: {
+        providers: [
+          ...(SENDGRID_API_KEY && SENDGRID_FROM_EMAIL ? [{
+            resolve: '@medusajs/notification-sendgrid',
+            id: 'sendgrid',
+            options: {
+              channels: ['email'],
+              api_key: SENDGRID_API_KEY,
+              from: SENDGRID_FROM_EMAIL,
+            }
+          }] : []),
+          ...(RESEND_API_KEY && RESEND_FROM_EMAIL ? [{
+            resolve: './src/modules/email-notifications/services/resend-provider', // ✅ Убедись, что путь правильный!
+            id: 'resend', // ✅ Убедись, что в ResendProvider `static identifier = 'resend'`
+            options: {
+              channels: ['email'],
+              api_key: RESEND_API_KEY,
+              from: RESEND_FROM_EMAIL,
+            },
+          }] : []),
+        ]
+      }
+    },
+    ...(STRIPE_API_KEY && STRIPE_WEBHOOK_SECRET ? [{
+      key: Modules.PAYMENT,
+      resolve: '@medusajs/payment',
+      options: {
+        providers: [
+          {
+            resolve: '@medusajs/payment-stripe',
+            id: 'stripe',
+            options: {
+              apiKey: STRIPE_API_KEY,
+              webhookSecret: STRIPE_WEBHOOK_SECRET,
+            },
+          },
+        ],
+      },
+    }] : [])
+  ],
+  plugins: [
+    ...(MEILISEARCH_HOST && MEILISEARCH_ADMIN_KEY ? [{
+      resolve: '@rokmohar/medusa-plugin-meilisearch',
+      options: {
+        config: {
+          host: MEILISEARCH_HOST,
+          apiKey: MEILISEARCH_ADMIN_KEY
+        },
+        settings: {
+          products: {
+            indexSettings: {
+              searchableAttributes: ['title', 'description', 'variant_sku'],
+              displayedAttributes: ['id', 'title', 'description', 'variant_sku', 'thumbnail', 'handle'],
+            },
+            primaryKey: 'id',
+          }
+        }
+      }
+    }] : [])
+  ]
+};
 
-    const emailOptions = notification.data.emailOptions as NotificationEmailOptions
+// 🔥 Логируем, какие email-провайдеры загружены
+console.log("🔍 Загруженные email-провайдеры:", JSON.stringify(
+  medusaConfig.modules.find(m => m.key === Modules.NOTIFICATION), null, 2
+));
 
-    // Compose the message body to send via API to Resend
-    const message: CreateEmailOptions = {
-      to: notification.to,
-      from: notification.from?.trim() ?? this.config_.from,
-      react: emailContent,
-      subject: emailOptions.subject ?? 'You have a new notification',
-      headers: emailOptions.headers,
-      replyTo: emailOptions.replyTo,
-      cc: emailOptions.cc,
-      bcc: emailOptions.bcc,
-      tags: emailOptions.tags,
-      text: emailOptions.text,
-      attachments: Array.isArray(notification.attachments)
-        ? notification.attachments.map((attachment) => ({
-            content: attachment.content,
-            filename: attachment.filename,
-            content_type: attachment.content_type,
-            disposition: attachment.disposition ?? 'attachment',
-            id: attachment.id ?? undefined
-          }))
-        : undefined,
-      scheduledAt: emailOptions.scheduledAt
-    }
-
-    // Send the email via Resend
-    try {
-      await this.resend.emails.send(message)
-      this.logger_.log(
-        `Successfully sent "${notification.template}" email to ${notification.to} via Resend`
-      )
-      return {} // Return an empty object on success
-    } catch (error) {
-      const errorCode = error.code
-      const responseError = error.response?.body?.errors?.[0]
-      throw new MedusaError(
-        MedusaError.Types.UNEXPECTED_STATE,
-        `Failed to send "${notification.template}" email to ${notification.to} via Resend: ${errorCode} - ${responseError?.message ?? 'unknown error'}`
-      )
-    }
-  }
-}
+export default defineConfig(medusaConfig);
