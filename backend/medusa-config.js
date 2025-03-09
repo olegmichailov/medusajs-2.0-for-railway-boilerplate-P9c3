@@ -24,6 +24,7 @@ import {
   MEILISEARCH_ADMIN_KEY
 } from 'lib/constants';
 
+// Загружаем переменные окружения
 loadEnv(process.env.NODE_ENV, process.cwd());
 
 const medusaConfig = {
@@ -57,7 +58,7 @@ const medusaConfig = {
               endPoint: MINIO_ENDPOINT,
               accessKey: MINIO_ACCESS_KEY,
               secretKey: MINIO_SECRET_KEY,
-              bucket: MINIO_BUCKET // Optional, default: medusa-media
+              bucket: MINIO_BUCKET
             }
           }] : [{
             resolve: '@medusajs/file-local',
@@ -86,7 +87,7 @@ const medusaConfig = {
         }
       }
     }] : []),
-    ...(SENDGRID_API_KEY && SENDGRID_FROM_EMAIL || RESEND_API_KEY && RESEND_FROM_EMAIL ? [{
+    {
       key: Modules.NOTIFICATION,
       resolve: '@medusajs/notification',
       options: {
@@ -101,8 +102,8 @@ const medusaConfig = {
             }
           }] : []),
           ...(RESEND_API_KEY && RESEND_FROM_EMAIL ? [{
-            resolve: './src/modules/email-notifications',
-            id: 'resend',
+            resolve: './src/modules/email-notifications/services/resend-provider', // ✅ Убедись, что путь правильный!
+            id: 'resend', // ✅ Убедись, что в ResendProvider `static identifier = 'resend'`
             options: {
               channels: ['email'],
               api_key: RESEND_API_KEY,
@@ -111,7 +112,7 @@ const medusaConfig = {
           }] : []),
         ]
       }
-    }] : []),
+    },
     ...(STRIPE_API_KEY && STRIPE_WEBHOOK_SECRET ? [{
       key: Modules.PAYMENT,
       resolve: '@medusajs/payment',
@@ -130,7 +131,7 @@ const medusaConfig = {
     }] : [])
   ],
   plugins: [
-  ...(MEILISEARCH_HOST && MEILISEARCH_ADMIN_KEY ? [{
+    ...(MEILISEARCH_HOST && MEILISEARCH_ADMIN_KEY ? [{
       resolve: '@rokmohar/medusa-plugin-meilisearch',
       options: {
         config: {
@@ -151,5 +152,9 @@ const medusaConfig = {
   ]
 };
 
-console.log(JSON.stringify(medusaConfig, null, 2));
+// 🔥 Логируем, какие email-провайдеры загружены
+console.log("🔍 Загруженные email-провайдеры:", JSON.stringify(
+  medusaConfig.modules.find(m => m.key === Modules.NOTIFICATION), null, 2
+));
+
 export default defineConfig(medusaConfig);
