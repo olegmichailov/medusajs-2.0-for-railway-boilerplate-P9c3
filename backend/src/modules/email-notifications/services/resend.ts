@@ -102,7 +102,7 @@ const medusaConfig = {
             }
           }] : []),
           ...(RESEND_API_KEY && RESEND_FROM_EMAIL ? [{
-            resolve: './src/modules/email-notifications/services/resend-provider', // ✅ Убедись, что путь правильный!
+            resolve: './src/modules/email-notifications/services/resend', // ✅ Убедись, что путь правильный!
             id: 'resend', // ✅ Убедись, что в ResendProvider `static identifier = 'resend'`
             options: {
               channels: ['email'],
