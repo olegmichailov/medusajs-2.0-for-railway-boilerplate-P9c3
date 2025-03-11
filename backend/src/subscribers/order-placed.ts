@@ -25,7 +25,7 @@ export default async function orderPlacedHandler({
 
     await notificationModuleService.createNotifications({
       to: order.email,
-      channel: 'resend',
+      channel: 'email',
       template: EmailTemplates.ORDER_PLACED, // Проверь, что шаблон существует
       data: {
         emailOptions: {
