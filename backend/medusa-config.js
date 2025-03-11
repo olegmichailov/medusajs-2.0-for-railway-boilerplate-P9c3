@@ -40,7 +40,7 @@ const medusaConfig = {
       jwtSecret: JWT_SECRET,
       cookieSecret: COOKIE_SECRET
     },
-    storeName: process.env.STORE_NAME || 'Gmorkl Store' // Добавлено название магазина
+    storeName: process.env.STORE_NAME || 'Gmorkl Store'
   },
   admin: {
     backendUrl: BACKEND_URL,
@@ -88,24 +88,14 @@ const medusaConfig = {
         }
       }
     }] : []),
-    // ✅ Email-уведомления с Resend и SendGrid
     {
       key: Modules.NOTIFICATION,
       resolve: '@medusajs/notification',
       options: {
         providers: [
-          ...(SENDGRID_API_KEY && SENDGRID_FROM_EMAIL ? [{
-            resolve: '@medusajs/notification-sendgrid',
-            id: 'sendgrid',
-            options: {
-              channels: ['email'],
-              api_key: SENDGRID_API_KEY,
-              from: SENDGRID_FROM_EMAIL,
-            }
-          }] : []),
           ...(RESEND_API_KEY && RESEND_FROM_EMAIL ? [{
-            resolve: '@medusajs/notification-resend',  // ✅ Resend настроен корректно
-            id: 'resend',  
+            resolve: '@medusajs/notification-resend',
+            id: 'resend',
             options: {
               channels: ['email'],
               api_key: RESEND_API_KEY,
@@ -132,29 +122,9 @@ const medusaConfig = {
       },
     }] : [])
   ],
-  plugins: [
-    ...(MEILISEARCH_HOST && MEILISEARCH_ADMIN_KEY ? [{
-      resolve: '@rokmohar/medusa-plugin-meilisearch',
-      options: {
-        config: {
-          host: MEILISEARCH_HOST,
-          apiKey: MEILISEARCH_ADMIN_KEY
-        },
-        settings: {
-          products: {
-            indexSettings: {
-              searchableAttributes: ['title', 'description', 'variant_sku'],
-              displayedAttributes: ['id', 'title', 'description', 'variant_sku', 'thumbnail', 'handle'],
-            },
-            primaryKey: 'id',
-          }
-        }
-      }
-    }] : [])
-  ]
+  plugins: []
 };
 
-// ✅ Отладка: Проверяем, загрузился ли `resend`
 console.log("🔍 Loaded notification providers:", JSON.stringify(medusaConfig.modules.find(m => m.key === Modules.NOTIFICATION), null, 2));
 
 export default defineConfig(medusaConfig);
