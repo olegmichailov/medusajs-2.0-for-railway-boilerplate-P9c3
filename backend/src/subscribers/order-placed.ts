@@ -29,7 +29,7 @@ export default async function orderPlacedHandler({
       template: EmailTemplates.ORDER_PLACED, // Проверь, что шаблон существует
       data: {
         emailOptions: {
-          replyTo: 'info@example.com',
+          replyTo: 'weare@example.com',
           subject: 'Your order has been placed'
         },
         order,
