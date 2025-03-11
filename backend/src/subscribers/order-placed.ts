@@ -1,7 +1,7 @@
-import { Modules } from "@medusajs/framework/utils"
-import { INotificationModuleService, IOrderModuleService } from "@medusajs/framework/types"
-import { SubscriberArgs, SubscriberConfig } from "@medusajs/medusa"
-import { EmailTemplates } from "../modules/email-notifications/templates"
+import { Modules } from '@medusajs/framework/utils'
+import { INotificationModuleService, IOrderModuleService } from '@medusajs/framework/types'
+import { SubscriberArgs, SubscriberConfig } from '@medusajs/medusa'
+import { ORDER_PLACED } from '../modules/email-notifications/templates/order-placed'
 
 export default async function orderPlacedHandler({
   event: { data },
@@ -9,33 +9,27 @@ export default async function orderPlacedHandler({
 }: SubscriberArgs<any>) {
   const notificationModuleService: INotificationModuleService = container.resolve(Modules.NOTIFICATION)
   const orderModuleService: IOrderModuleService = container.resolve(Modules.ORDER)
-  
-  const order = await orderModuleService.retrieveOrder(data.id, {
-    relations: ["items", "summary", "shipping_address"]
-  })
 
-  const shippingAddress = await (orderModuleService as any).orderAddressService_.retrieve(order.shipping_address.id)
+  const order = await orderModuleService.retrieveOrder(data.id, { relations: ['items', 'summary', 'shipping_address'] })
+  const shippingAddress = order.shipping_address
 
   try {
     await notificationModuleService.createNotifications({
       to: order.email,
-      channel: "resend", 
-      template: EmailTemplates.ORDER_PLACED,
+      channel: 'resend', // или 'email', если используешь SendGrid
+      template: ORDER_PLACED, // Используемый шаблон
       data: {
-        emailOptions: {
-          replyTo: "weara@gmorkl.de",  
-          subject: "Your order has been placed",
-        },
         order,
         shippingAddress,
-        preview: "Thank you for your order!",
-      },
+        subject: 'Your order has been placed'
+      }
     })
+    console.log('✅ Order confirmation notification sent successfully.')
   } catch (error) {
-    console.error("❌ Ошибка отправки email:", error)
+    console.error('❌ Error sending order confirmation notification:', error)
   }
 }
 
 export const config: SubscriberConfig = {
-  event: "order.placed"
+  event: 'order.placed'
 }
