@@ -40,7 +40,7 @@ const medusaConfig = {
       jwtSecret: JWT_SECRET,
       cookieSecret: COOKIE_SECRET
     },
-    storeName: process.env.STORE_NAME || 'Gmorkl Store' // Add this line for default store name
+    storeName: process.env.STORE_NAME || 'Gmorkl Store' // Добавлено название магазина
   },
   admin: {
     backendUrl: BACKEND_URL,
@@ -59,7 +59,7 @@ const medusaConfig = {
               endPoint: MINIO_ENDPOINT,
               accessKey: MINIO_ACCESS_KEY,
               secretKey: MINIO_SECRET_KEY,
-              bucket: MINIO_BUCKET // Опционально, по умолчанию: medusa-media
+              bucket: MINIO_BUCKET
             }
           }] : [{
             resolve: '@medusajs/file-local',
@@ -88,7 +88,7 @@ const medusaConfig = {
         }
       }
     }] : []),
-    // 🔹 Email-уведомления с Resend и SendGrid
+    // ✅ Email-уведомления с Resend и SendGrid
     {
       key: Modules.NOTIFICATION,
       resolve: '@medusajs/notification',
@@ -104,8 +104,8 @@ const medusaConfig = {
             }
           }] : []),
           ...(RESEND_API_KEY && RESEND_FROM_EMAIL ? [{
-            resolve: './src/modules/email-notifications/services/resend', // 🔥 УБЕДИСЬ, ЧТО У ТЕБЯ `resend.ts`
-            id: 'resend', // 🔥 НАЗВАНИЕ ДОЛЖНО БЫТЬ `resend`
+            resolve: '@medusajs/notification-resend',  // ✅ Resend настроен корректно
+            id: 'resend',  
             options: {
               channels: ['email'],
               api_key: RESEND_API_KEY,
@@ -154,7 +154,7 @@ const medusaConfig = {
   ]
 };
 
-// 🔥 Отладка: Проверяем, загрузился ли `resend`
+// ✅ Отладка: Проверяем, загрузился ли `resend`
 console.log("🔍 Loaded notification providers:", JSON.stringify(medusaConfig.modules.find(m => m.key === Modules.NOTIFICATION), null, 2));
 
 export default defineConfig(medusaConfig);
