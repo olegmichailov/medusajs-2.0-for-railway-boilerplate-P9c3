@@ -30,7 +30,7 @@ export const OrderPlacedTemplate: React.FC<OrderPlacedTemplateProps> & {
         </Text>
 
         <Text style={{ margin: '0 0 15px' }}>
-          Dear {shippingAddress.first_name} {shippingAddress.last_name},
+          Dear {shippingAddress?.first_name || 'Customer'} {shippingAddress?.last_name || ''},
         </Text>
 
         <Text style={{ margin: '0 0 30px' }}>
@@ -41,13 +41,13 @@ export const OrderPlacedTemplate: React.FC<OrderPlacedTemplateProps> & {
           Order Summary
         </Text>
         <Text style={{ margin: '0 0 5px' }}>
-          Order ID: {order.display_id}
+          Order ID: {order?.display_id || 'N/A'}
         </Text>
         <Text style={{ margin: '0 0 5px' }}>
-          Order Date: {new Date(order.created_at).toLocaleDateString()}
+          Order Date: {order?.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
         </Text>
         <Text style={{ margin: '0 0 20px' }}>
-          Total: {order.summary.raw_current_order_total.value} {order.currency_code}
+          Total: {order?.summary?.raw_current_order_total?.value || '0'} {order?.currency_code || ''}
         </Text>
 
         <Hr style={{ margin: '20px 0' }} />
@@ -56,13 +56,13 @@ export const OrderPlacedTemplate: React.FC<OrderPlacedTemplateProps> & {
           Shipping Address
         </Text>
         <Text style={{ margin: '0 0 5px' }}>
-          {shippingAddress.address_1}
+          {shippingAddress?.address_1 || 'N/A'}
         </Text>
         <Text style={{ margin: '0 0 5px' }}>
-          {shippingAddress.city}, {shippingAddress.province} {shippingAddress.postal_code}
+          {shippingAddress?.city || 'N/A'}, {shippingAddress?.province || ''} {shippingAddress?.postal_code || ''}
         </Text>
         <Text style={{ margin: '0 0 20px' }}>
-          {shippingAddress.country_code}
+          {shippingAddress?.country_code || ''}
         </Text>
 
         <Hr style={{ margin: '20px 0' }} />
@@ -88,16 +88,16 @@ export const OrderPlacedTemplate: React.FC<OrderPlacedTemplateProps> & {
             <Text style={{ fontWeight: 'bold' }}>Quantity</Text>
             <Text style={{ fontWeight: 'bold' }}>Price</Text>
           </div>
-          {order.items.map((item) => (
+          {order?.items?.map((item) => (
             <div key={item.id} style={{
               display: 'flex',
               justifyContent: 'space-between',
               padding: '8px',
               borderBottom: '1px solid #ddd'
             }}>
-              <Text>{item.title} - {item.product_title}</Text>
-              <Text>{item.quantity}</Text>
-              <Text>{item.unit_price} {order.currency_code}</Text>
+              <Text>{item?.title || 'Unknown'} - {item?.product_title || ''}</Text>
+              <Text>{item?.quantity || '0'}</Text>
+              <Text>{item?.unit_price || '0'} {order?.currency_code || ''}</Text>
             </div>
           ))}
         </div>
