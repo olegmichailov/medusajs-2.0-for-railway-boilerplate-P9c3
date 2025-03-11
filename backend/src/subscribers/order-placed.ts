@@ -19,11 +19,11 @@ export default async function orderPlacedHandler({
   try {
     await notificationModuleService.createNotifications({
       to: order.email,
-      channel: "email",  // ✅ Исправлено: "email" вместо "resend"
+      channel: "email", 
       template: EmailTemplates.ORDER_PLACED,
       data: {
         emailOptions: {
-          replyTo: "weara@gmorkl.de",  // ✅ Указан твой email
+          replyTo: "weara@gmorkl.de",  
           subject: "Your order has been placed",
         },
         order,
