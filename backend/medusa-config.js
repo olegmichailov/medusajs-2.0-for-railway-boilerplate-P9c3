@@ -1,4 +1,5 @@
 import { loadEnv, Modules, defineConfig } from '@medusajs/utils';
+import path from 'path';
 import {
   ADMIN_CORS,
   AUTH_CORS,
@@ -92,7 +93,7 @@ const medusaConfig = {
       options: {
         providers: [
           ...(RESEND_API_KEY && RESEND_FROM_EMAIL ? [{
-            resolve: './src/modules/email-notifications/services/resend', // 🔥 Должен быть файл `resend.ts`
+            resolve: path.resolve(__dirname, './src/modules/email-notifications/services/resend'),
             id: 'resend',
             options: {
               channels: ['email'],
@@ -126,7 +127,15 @@ const medusaConfig = {
 };
 
 // 🔥 Отладка Resend
-console.log("🔍 Loaded notification providers:", JSON.stringify(medusaConfig.modules.find(m => m.key === Modules.NOTIFICATION), null, 2));
+const notificationModule = medusaConfig.modules.find(m => m.key === Modules.NOTIFICATION);
+
+console.log("🔍 Проверка загрузки провайдеров уведомлений:", notificationModule?.options?.providers);
+
+if (!notificationModule || !notificationModule.options.providers.find(p => p.id === 'resend')) {
+  console.error("❌ Resend НЕ загружен! Проверь конфигурацию в medusa-config.js");
+} else {
+  console.log("✅ Resend загружен и готов к использованию.");
+}
 
 // 🔥 Отладка Stripe
 console.log("✅ Stripe webhook URL:", `${BACKEND_URL}/hooks/payments/stripe`);
