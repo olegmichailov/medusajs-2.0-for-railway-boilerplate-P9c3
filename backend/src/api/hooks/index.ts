@@ -1,5 +1,8 @@
-import stripeWebhook from "./payments/stripe"
+import { Router } from "express"
+import stripeWebhookHandler from "../webhooks/stripe"
 
-export default {
-  stripeWebhook,
-}
+const router = Router()
+
+router.post("/hooks/payments/stripe", stripeWebhookHandler)
+
+export default router
