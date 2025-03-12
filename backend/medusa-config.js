@@ -92,7 +92,7 @@ const medusaConfig = {
       options: {
         providers: [
           ...(RESEND_API_KEY && RESEND_FROM_EMAIL ? [{
-            resolve: './src/modules/email-notifications/services/resend', // 🔥 Файл `resend.ts` ДОЛЖЕН БЫТЬ в `services`
+            resolve: './src/modules/email-notifications/services/resend', // 🔥 Должен быть файл `resend.ts`
             id: 'resend',
             options: {
               channels: ['email'],
@@ -114,7 +114,8 @@ const medusaConfig = {
             options: {
               apiKey: STRIPE_API_KEY,
               webhookSecret: STRIPE_WEBHOOK_SECRET,
-              webhookEndpoint: `${BACKEND_URL}/hooks/payments/stripe`, // ✅ Исправленный URL вебхука
+              webhookEndpoint: `${BACKEND_URL}/hooks/payments/stripe`, // ✅ Убедись, что этот эндпоинт зарегистрирован в Stripe
+              enableLogging: true, // 🔥 Включаем логирование Stripe событий
             },
           },
         ],
@@ -124,7 +125,10 @@ const medusaConfig = {
   plugins: []
 };
 
-// 🔥 Отладка: Проверяем, загружен ли `resend`
+// 🔥 Отладка Resend
 console.log("🔍 Loaded notification providers:", JSON.stringify(medusaConfig.modules.find(m => m.key === Modules.NOTIFICATION), null, 2));
+
+// 🔥 Отладка Stripe
+console.log("✅ Stripe webhook URL:", `${BACKEND_URL}/hooks/payments/stripe`);
 
 export default defineConfig(medusaConfig);
