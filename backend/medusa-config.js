@@ -95,8 +95,8 @@ const medusaConfig = {
             id: 'resend',
             options: {
               channels: ['email'],
-              api_key: process.env.RESEND_API_KEY || 're_ah9vABbh_427LmkRpMR1XdPr8oaTARaLH',
-              from: process.env.RESEND_FROM_EMAIL || 'weare@gmorkl.de',
+              api_key: process.env.RESEND_API_KEY,
+              from: process.env.RESEND_FROM_EMAIL,
             },
           },
         ],
@@ -113,7 +113,7 @@ const medusaConfig = {
             options: {
               apiKey: STRIPE_API_KEY,
               webhookSecret: STRIPE_WEBHOOK_SECRET,
-              webhookEndpoint: `${BACKEND_URL}/hooks/payments/stripe`, // ✅ Убедись, что этот эндпоинт зарегистрирован в Stripe
+              webhookEndpoint: `${BACKEND_URL}/hooks/payments/stripe`,
               enableLogging: true, // 🔥 Включаем логирование Stripe событий
             },
           },
@@ -124,18 +124,7 @@ const medusaConfig = {
   plugins: []
 };
 
-// 🔥 Отладка Resend
-const notificationModule = medusaConfig.modules.find(m => m.key === Modules.NOTIFICATION);
-
-console.log("🔍 Проверка загрузки провайдеров уведомлений:", notificationModule?.options?.providers);
-
-if (!notificationModule || !notificationModule.options.providers.find(p => p.id === 'resend')) {
-  console.error("❌ Resend НЕ загружен! Проверь конфигурацию в medusa-config.js");
-} else {
-  console.log("✅ Resend загружен и готов к использованию.");
-}
-
-// 🔥 Отладка Stripe
-console.log("✅ Stripe webhook URL:", `${BACKEND_URL}/hooks/payments/stripe`);
+// 🔥 Проверка загрузки Resend
+console.log("🔍 Проверка загрузки провайдеров уведомлений:", medusaConfig.modules.find(m => m.key === Modules.NOTIFICATION)?.options?.providers);
 
 export default defineConfig(medusaConfig);
