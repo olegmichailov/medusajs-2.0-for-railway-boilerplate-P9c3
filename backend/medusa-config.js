@@ -8,8 +8,6 @@ import {
   DATABASE_URL,
   JWT_SECRET,
   REDIS_URL,
-  RESEND_API_KEY,
-  RESEND_FROM_EMAIL,
   SHOULD_DISABLE_ADMIN,
   STORE_CORS,
   STRIPE_API_KEY,
@@ -92,16 +90,16 @@ const medusaConfig = {
       resolve: '@medusajs/notification',
       options: {
         providers: [
-          ...(RESEND_API_KEY && RESEND_FROM_EMAIL ? [{
+          {
             resolve: path.resolve(__dirname, './src/modules/email-notifications/services/resend'),
             id: 'resend',
             options: {
               channels: ['email'],
-              api_key: RESEND_API_KEY,
-              from: RESEND_FROM_EMAIL,
+              api_key: process.env.RESEND_API_KEY || 're_ah9vABbh_427LmkRpMR1XdPr8oaTARaLH',
+              from: process.env.RESEND_FROM_EMAIL || 'weare@gmorkl.de',
             },
-          }] : []),
-        ]
+          },
+        ],
       }
     },
     ...(STRIPE_API_KEY && STRIPE_WEBHOOK_SECRET ? [{
