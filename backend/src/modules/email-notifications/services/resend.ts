@@ -27,7 +27,7 @@ type NotificationEmailOptions = Omit<
  * Сервис для отправки email через Resend API.
  */
 export class ResendNotificationService extends AbstractNotificationProviderService {
-  static identifier = "resend"; // 📌 Должно совпадать с medusa-config.ts
+  static identifier = "resend"; // 📌 Должно совпадать с id в medusa-config.js
   protected config_: ResendServiceConfig;
   protected logger_: Logger;
   protected resend: Resend;
@@ -40,6 +40,9 @@ export class ResendNotificationService extends AbstractNotificationProviderServi
     };
     this.logger_ = logger;
     this.resend = new Resend(this.config_.apiKey);
+
+    // 🔥 Добавляем отладочный вывод
+    console.log("✅ ResendNotificationService загружен с параметрами:", this.config_);
   }
 
   async send(
@@ -89,12 +92,18 @@ export class ResendNotificationService extends AbstractNotificationProviderServi
     };
 
     try {
+      // 🔥 Логируем отправку перед вызовом Resend
+      console.log("📨 Отправка email через Resend:", JSON.stringify(message, null, 2));
+
       await this.resend.emails.send(message);
-      this.logger_.log(
-        `Успешно отправлено email "${notification.template}" на ${notification.to} через Resend`
+
+      console.log(
+        `✅ Успешно отправлено email "${notification.template}" на ${notification.to} через Resend`
       );
+
       return {};
     } catch (error) {
+      console.error("❌ Ошибка при отправке email через Resend:", error);
       throw new MedusaError(
         MedusaError.Types.UNEXPECTED_STATE,
         `Ошибка отправки email "${notification.template}" на ${notification.to} через Resend`
