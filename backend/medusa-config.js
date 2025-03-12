@@ -28,7 +28,7 @@ loadEnv(process.env.NODE_ENV, process.cwd());
 const medusaConfig = {
   projectConfig: {
     databaseUrl: DATABASE_URL,
-    databaseLogging: false,
+    databaseLogging: true, // Включено логирование БД
     redisUrl: REDIS_URL,
     workerMode: WORKER_MODE,
     http: {
@@ -86,14 +86,13 @@ const medusaConfig = {
         }
       }
     }] : []),
-    // 🔹 Email-уведомления с Resend
     {
       key: Modules.NOTIFICATION,
       resolve: '@medusajs/notification',
       options: {
         providers: [
           ...(RESEND_API_KEY && RESEND_FROM_EMAIL ? [{
-            resolve: '@medusajs/notification-resend',
+            resolve: './src/modules/email-notifications/services/resend', // 🔥 Файл `resend.ts` ДОЛЖЕН БЫТЬ в `services`
             id: 'resend',
             options: {
               channels: ['email'],
@@ -115,6 +114,7 @@ const medusaConfig = {
             options: {
               apiKey: STRIPE_API_KEY,
               webhookSecret: STRIPE_WEBHOOK_SECRET,
+              webhookEndpoint: `${BACKEND_URL}/hooks/payments/stripe`, // ✅ Исправленный URL вебхука
             },
           },
         ],
@@ -124,7 +124,7 @@ const medusaConfig = {
   plugins: []
 };
 
-// 🔥 Проверка загруженных модулей, убедись, что `resend` корректно загружается
+// 🔥 Отладка: Проверяем, загружен ли `resend`
 console.log("🔍 Loaded notification providers:", JSON.stringify(medusaConfig.modules.find(m => m.key === Modules.NOTIFICATION), null, 2));
 
 export default defineConfig(medusaConfig);
