@@ -1,31 +1,61 @@
-import { MedusaRequest, MedusaResponse } from "@medusajs/medusa";
 import Stripe from "stripe";
+import { MedusaContainer } from "@medusajs/medusa";
+import { PaymentProviderService } from "@medusajs/medusa";
 
-export default async (req: MedusaRequest, res: MedusaResponse) => {
-  if (req.method !== "POST") {
-    return res.status(405).send("Method Not Allowed");
+class StripeProviderService extends PaymentProviderService {
+  static identifier = "stripe";
+
+  protected stripe: Stripe;
+
+  constructor(container: MedusaContainer, options) {
+    super(container, options);
+    this.stripe = new Stripe(process.env.STRIPE_API_KEY, {
+      apiVersion: "2023-10-16",
+    });
   }
 
-  const stripe = new Stripe(process.env.STRIPE_API_KEY, {
-    apiVersion: "2023-08-16",
-  });
+  async createPayment(session) {
+    const paymentIntent = await this.stripe.paymentIntents.create({
+      amount: session.amount,
+      currency: session.currency,
+      payment_method_types: ["card"],
+      metadata: { order_id: session.cart_id },
+    });
 
-  const sig = req.headers["stripe-signature"];
-
-  let event;
-
-  try {
-    event = stripe.webhooks.constructEvent(
-      req.body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
-  } catch (err) {
-    console.error("⚠️ Webhook signature verification failed:", err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+    return { id: paymentIntent.id, status: paymentIntent.status };
   }
 
-  console.log("✅ Webhook received:", event.type);
+  async capturePayment(paymentData) {
+    return this.stripe.paymentIntents.capture(paymentData.id);
+  }
 
-  res.status(200).json({ received: true });
-};
+  async refundPayment(paymentData) {
+    return this.stripe.refunds.create({ payment_intent: paymentData.id });
+  }
+
+  async webhookHandler(req) {
+    let event;
+
+    try {
+      event = this.stripe.webhooks.constructEvent(
+        req.body,
+        req.headers["stripe-signature"],
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
+    } catch (err) {
+      console.error("Stripe webhook signature verification failed.", err);
+      throw new Error("Webhook signature verification failed.");
+    }
+
+    if (event.type === "payment_intent.succeeded") {
+      const paymentIntent = event.data.object;
+      console.log(`Payment succeeded: ${paymentIntent.id}`);
+    } else if (event.type === "payment_intent.payment_failed") {
+      console.log("Payment failed: ", event.data.object);
+    }
+
+    return event;
+  }
+}
+
+export default StripeProviderService;
