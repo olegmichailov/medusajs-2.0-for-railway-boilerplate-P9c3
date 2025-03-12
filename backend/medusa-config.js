@@ -9,8 +9,6 @@ import {
   REDIS_URL,
   RESEND_API_KEY,
   RESEND_FROM_EMAIL,
-  SENDGRID_API_KEY,
-  SENDGRID_FROM_EMAIL,
   SHOULD_DISABLE_ADMIN,
   STORE_CORS,
   STRIPE_API_KEY,
@@ -88,6 +86,7 @@ const medusaConfig = {
         }
       }
     }] : []),
+    // 🔹 Email-уведомления с Resend
     {
       key: Modules.NOTIFICATION,
       resolve: '@medusajs/notification',
@@ -125,6 +124,7 @@ const medusaConfig = {
   plugins: []
 };
 
+// 🔥 Проверка загруженных модулей, убедись, что `resend` корректно загружается
 console.log("🔍 Loaded notification providers:", JSON.stringify(medusaConfig.modules.find(m => m.key === Modules.NOTIFICATION), null, 2));
 
 export default defineConfig(medusaConfig);
