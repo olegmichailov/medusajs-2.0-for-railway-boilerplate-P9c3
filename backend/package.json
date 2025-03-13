@@ -10,8 +10,11 @@
     "migrate": "medusa migrations run"
   },
   "dependencies": {
+    "@medusajs/admin-sdk": "2.4.0",
+    "@medusajs/cli": "2.4.0",
+    "@medusajs/core-flows": "2.4.0",
+    "@medusajs/framework": "2.4.0",
     "@medusajs/medusa": "2.4.0",
-    "@medusajs/medusa-cli": "2.4.0",
     "@medusajs/notification-sendgrid": "2.4.0",
     "@medusajs/payment-stripe": "2.4.0",
     "@medusajs/workflow-engine-redis": "2.4.0",
@@ -19,11 +22,14 @@
     "@mikro-orm/knex": "6.4.3",
     "@mikro-orm/migrations": "6.4.3",
     "@mikro-orm/postgresql": "6.4.3",
+    "@react-email/components": "0.0.26",
+    "@rokmohar/medusa-plugin-meilisearch": "1.0.4",
     "awilix": "8.0.1",
     "express": "^4.18.2",
     "stripe": "^12.0.0",
     "minio": "8.0.4",
     "pg": "8.13.1",
+    "resend": "4.0.1",
     "ulid": "2.3.0"
   },
   "devDependencies": {
