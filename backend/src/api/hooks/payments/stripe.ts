@@ -1,35 +1,36 @@
-import { Router } from "express";
+import express from "express";
+import bodyParser from "body-parser";
 import Stripe from "stripe";
 
+const app = express();
 const stripe = new Stripe(process.env.STRIPE_API_KEY as string, {
   apiVersion: "2023-08-16",
 });
 
-const router = Router();
+app.post(
+  "/hooks/payments/stripe",
+  bodyParser.raw({ type: "application/json" }),
+  (req, res) => {
+    const sig = req.headers["stripe-signature"] as string;
 
-router.post("/", async (req, res) => {
-  const sig = req.headers["stripe-signature"] as string;
-
-  try {
-    const event = stripe.webhooks.constructEvent(
-      req.body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET as string
-    );
-
-    console.log("✅ Stripe webhook received:", event);
-
-    if (event.type === "payment_intent.succeeded") {
-      console.log("💰 Payment succeeded:", event.data.object.id);
-    } else if (event.type === "payment_intent.payment_failed") {
-      console.log("❌ Payment failed:", event.data.object.id);
+    try {
+      const event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        process.env.STRIPE_WEBHOOK_SECRET as string
+      );
+      // Обработка события:
+      if (event.type === "payment_intent.succeeded") {
+        console.log("Payment succeeded:", event.data.object.id);
+      } else if (event.type === "payment_intent.payment_failed") {
+        console.log("Payment failed:", event.data.object.id);
+      }
+      res.json({ received: true });
+    } catch (err) {
+      console.error("Error verifying webhook:", err.message);
+      res.status(400).send(`Webhook Error: ${err.message}`);
     }
-
-    res.status(200).json({ received: true });
-  } catch (err) {
-    console.error("❌ Error verifying Stripe webhook:", err);
-    res.status(400).json({ error: "Webhook signature verification failed" });
   }
-});
+);
 
-export default router;
+app.listen(8080, () => console.log("Server running on port 8080"));
