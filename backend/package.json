@@ -1,6 +1,6 @@
 {
   "name": "medusa-2.0-boilerplate-backend",
-  "version": "0.0.7",
+  "version": "0.0.2",
   "description": "A Prebaked Medusa 2.0 backend",
   "author": "Rasmus Puls",
   "license": "MIT",
@@ -15,7 +15,8 @@
   "scripts": {
     "build": "medusa build && node src/scripts/postBuild.js",
     "seed": "medusa exec ./src/scripts/seed.ts",
-    "start": "medusa start --verbose",
+    "ib": "init-backend",
+    "start": "init-backend && cd .medusa/server && medusa start --verbose",
     "dev": "medusa develop",
     "email:dev": "email dev --dir=./src/modules/email-notifications/templates --port=3002"
   },
