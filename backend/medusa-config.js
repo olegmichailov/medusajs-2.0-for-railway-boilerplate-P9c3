@@ -14,6 +14,12 @@ import {
   STRIPE_API_KEY,
   STRIPE_WEBHOOK_SECRET,
   WORKER_MODE,
+  MINIO_ENDPOINT,
+  MINIO_ACCESS_KEY,
+  MINIO_SECRET_KEY,
+  MINIO_BUCKET,
+  MEILISEARCH_HOST,
+  MEILISEARCH_ADMIN_KEY
 } from 'lib/constants';
 
 // Загружаем переменные окружения
@@ -22,7 +28,7 @@ loadEnv(process.env.NODE_ENV, process.cwd());
 const medusaConfig = {
   projectConfig: {
     databaseUrl: DATABASE_URL,
-    databaseLogging: true,
+    databaseLogging: true, // Включено логирование БД
     redisUrl: REDIS_URL,
     workerMode: WORKER_MODE,
     http: {
@@ -40,23 +46,64 @@ const medusaConfig = {
   },
   modules: [
     {
+      key: Modules.FILE,
+      resolve: '@medusajs/file',
+      options: {
+        providers: [
+          ...(MINIO_ENDPOINT && MINIO_ACCESS_KEY && MINIO_SECRET_KEY ? [{
+            resolve: './src/modules/minio-file',
+            id: 'minio',
+            options: {
+              endPoint: MINIO_ENDPOINT,
+              accessKey: MINIO_ACCESS_KEY,
+              secretKey: MINIO_SECRET_KEY,
+              bucket: MINIO_BUCKET
+            }
+          }] : [{
+            resolve: '@medusajs/file-local',
+            id: 'local',
+            options: {
+              upload_dir: 'static',
+              backend_url: `${BACKEND_URL}/static`
+            }
+          }])
+        ]
+      }
+    },
+    ...(REDIS_URL ? [{
+      key: Modules.EVENT_BUS,
+      resolve: '@medusajs/event-bus-redis',
+      options: {
+        redisUrl: REDIS_URL
+      }
+    },
+    {
+      key: Modules.WORKFLOW_ENGINE,
+      resolve: '@medusajs/workflow-engine-redis',
+      options: {
+        redis: {
+          url: REDIS_URL,
+        }
+      }
+    }] : []),
+    {
       key: Modules.NOTIFICATION,
       resolve: '@medusajs/notification',
       options: {
         providers: [
-          {
-            resolve: './src/modules/email-notifications/services/resend',
+          ...(RESEND_API_KEY && RESEND_FROM_EMAIL ? [{
+            resolve: './src/modules/email-notifications/services/resend', // 🔥 Должен быть файл `resend.ts`
             id: 'resend',
             options: {
               channels: ['email'],
               api_key: RESEND_API_KEY,
               from: RESEND_FROM_EMAIL,
             },
-          }
+          }] : []),
         ]
       }
     },
-    {
+    ...(STRIPE_API_KEY && STRIPE_WEBHOOK_SECRET ? [{
       key: Modules.PAYMENT,
       resolve: '@medusajs/payment',
       options: {
@@ -67,14 +114,21 @@ const medusaConfig = {
             options: {
               apiKey: STRIPE_API_KEY,
               webhookSecret: STRIPE_WEBHOOK_SECRET,
-              webhookEndpoint: `${BACKEND_URL}/hooks/payments/stripe`,
-              enableLogging: true,
+              webhookEndpoint: `${BACKEND_URL}/hooks/payments/stripe`, // ✅ Убедись, что этот эндпоинт зарегистрирован в Stripe
+              enableLogging: true, // 🔥 Включаем логирование Stripe событий
             },
           },
         ],
       },
-    }
+    }] : [])
   ],
+  plugins: []
 };
+
+// 🔥 Отладка Resend
+console.log("🔍 Loaded notification providers:", JSON.stringify(medusaConfig.modules.find(m => m.key === Modules.NOTIFICATION), null, 2));
+
+// 🔥 Отладка Stripe
+console.log("✅ Stripe webhook URL:", `${BACKEND_URL}/hooks/payments/stripe`);
 
 export default defineConfig(medusaConfig);
