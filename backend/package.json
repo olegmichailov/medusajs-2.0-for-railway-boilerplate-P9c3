@@ -1,6 +1,6 @@
 {
   "name": "medusa-2.0-boilerplate-backend",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A Prebaked Medusa 2.0 backend",
   "author": "Rasmus Puls",
   "license": "MIT",
@@ -18,7 +18,9 @@
     "ib": "init-backend",
     "start": "init-backend && cd .medusa/server && medusa start --verbose",
     "dev": "medusa develop",
-    "email:dev": "email dev --dir=./src/modules/email-notifications/templates --port=3002"
+    "email:dev": "email dev --dir=./src/modules/email-notifications/templates --port=3002",
+    "clean-install": "rm -rf node_modules pnpm-lock.yaml && pnpm install --no-frozen-lockfile",
+    "deploy": "pnpm clean-install && pnpm build"
   },
   "dependencies": {
     "@medusajs/admin-sdk": "2.4.0",
@@ -36,12 +38,12 @@
     "@react-email/components": "0.0.26",
     "@rokmohar/medusa-plugin-meilisearch": "1.0.4",
     "awilix": "8.0.1",
-    "express": "^4.18.2",
-    "stripe": "^12.0.0",
     "medusajs-launch-utils": "0.0.14",
     "minio": "8.0.4",
     "pg": "8.13.1",
     "resend": "4.0.1",
+    "stripe": "^12.0.0",
+    "express": "^4.18.2",
     "ulid": "2.3.0"
   },
   "devDependencies": {
@@ -66,7 +68,7 @@
   },
   "packageManager": "pnpm@9.10.0",
   "engines": {
-    "node": "20.x",
-    "npm": "9.x"
+    "node": "22.x",
+    "npm": "10.x"
   }
 }
