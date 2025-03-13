@@ -1,5 +1,4 @@
 import { loadEnv, Modules, defineConfig } from '@medusajs/utils';
-import path from 'path';
 import {
   ADMIN_CORS,
   AUTH_CORS,
@@ -8,6 +7,8 @@ import {
   DATABASE_URL,
   JWT_SECRET,
   REDIS_URL,
+  RESEND_API_KEY,
+  RESEND_FROM_EMAIL,
   SHOULD_DISABLE_ADMIN,
   STORE_CORS,
   STRIPE_API_KEY,
@@ -27,7 +28,7 @@ loadEnv(process.env.NODE_ENV, process.cwd());
 const medusaConfig = {
   projectConfig: {
     databaseUrl: DATABASE_URL,
-    databaseLogging: true,
+    databaseLogging: true, // Включено логирование БД
     redisUrl: REDIS_URL,
     workerMode: WORKER_MODE,
     http: {
@@ -90,16 +91,16 @@ const medusaConfig = {
       resolve: '@medusajs/notification',
       options: {
         providers: [
-          {
-            resolve: path.resolve(__dirname, './src/modules/email-notifications/services/resend'),
+          ...(RESEND_API_KEY && RESEND_FROM_EMAIL ? [{
+            resolve: './src/modules/email-notifications/services/resend', // 🔥 Должен быть файл `resend.ts`
             id: 'resend',
             options: {
               channels: ['email'],
-              api_key: process.env.RESEND_API_KEY,
-              from: process.env.RESEND_FROM_EMAIL,
+              api_key: RESEND_API_KEY,
+              from: RESEND_FROM_EMAIL,
             },
-          },
-        ],
+          }] : []),
+        ]
       }
     },
     ...(STRIPE_API_KEY && STRIPE_WEBHOOK_SECRET ? [{
@@ -113,8 +114,8 @@ const medusaConfig = {
             options: {
               apiKey: STRIPE_API_KEY,
               webhookSecret: STRIPE_WEBHOOK_SECRET,
-              webhookEndpoint: `${BACKEND_URL}/hooks/payments/stripe`,
-              enableLogging: true,
+              webhookEndpoint: `${BACKEND_URL}/hooks/payments/stripe`, // ✅ Убедись, что этот эндпоинт зарегистрирован в Stripe
+              enableLogging: true, // 🔥 Включаем логирование Stripe событий
             },
           },
         ],
@@ -124,6 +125,10 @@ const medusaConfig = {
   plugins: []
 };
 
-console.log("🔍 Проверка загрузки провайдеров уведомлений:", medusaConfig.modules.find(m => m.key === Modules.NOTIFICATION)?.options?.providers);
+// 🔥 Отладка Resend
+console.log("🔍 Loaded notification providers:", JSON.stringify(medusaConfig.modules.find(m => m.key === Modules.NOTIFICATION), null, 2));
+
+// 🔥 Отладка Stripe
+console.log("✅ Stripe webhook URL:", `${BACKEND_URL}/hooks/payments/stripe`);
 
 export default defineConfig(medusaConfig);
