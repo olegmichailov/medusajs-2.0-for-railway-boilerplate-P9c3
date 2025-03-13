@@ -1,4 +1,5 @@
 import { loadEnv, Modules, defineConfig } from '@medusajs/utils';
+import path from 'path';
 import {
   ADMIN_CORS,
   AUTH_CORS,
@@ -22,13 +23,12 @@ import {
   MEILISEARCH_ADMIN_KEY
 } from 'lib/constants';
 
-// Загружаем переменные окружения
 loadEnv(process.env.NODE_ENV, process.cwd());
 
 const medusaConfig = {
   projectConfig: {
     databaseUrl: DATABASE_URL,
-    databaseLogging: true, // Включено логирование БД
+    databaseLogging: true,
     redisUrl: REDIS_URL,
     workerMode: WORKER_MODE,
     http: {
@@ -92,7 +92,7 @@ const medusaConfig = {
       options: {
         providers: [
           ...(RESEND_API_KEY && RESEND_FROM_EMAIL ? [{
-            resolve: './src/modules/email-notifications/services/resend', // 🔥 Должен быть файл `resend.ts`
+            resolve: './src/modules/email-notifications/services/resend',
             id: 'resend',
             options: {
               channels: ['email'],
@@ -114,8 +114,8 @@ const medusaConfig = {
             options: {
               apiKey: STRIPE_API_KEY,
               webhookSecret: STRIPE_WEBHOOK_SECRET,
-              webhookEndpoint: `${BACKEND_URL}/hooks/payments/stripe`, // ✅ Убедись, что этот эндпоинт зарегистрирован в Stripe
-              enableLogging: true, // 🔥 Включаем логирование Stripe событий
+              webhookEndpoint: `${BACKEND_URL}/hooks/payments/stripe`,
+              enableLogging: true,
             },
           },
         ],
@@ -125,10 +125,11 @@ const medusaConfig = {
   plugins: []
 };
 
-// 🔥 Отладка Resend
-console.log("🔍 Loaded notification providers:", JSON.stringify(medusaConfig.modules.find(m => m.key === Modules.NOTIFICATION), null, 2));
+// Логирование конфигурации уведомлений
+const notificationConfig = medusaConfig.modules.find(m => m.key === Modules.NOTIFICATION);
+console.log("🔍 Loaded notification providers:", JSON.stringify(notificationConfig, null, 2));
 
-// 🔥 Отладка Stripe
+// Логирование конфигурации Stripe
 console.log("✅ Stripe webhook URL:", `${BACKEND_URL}/hooks/payments/stripe`);
 
 export default defineConfig(medusaConfig);
