@@ -45,9 +45,6 @@ export class ResendNotificationService extends AbstractNotificationProviderServi
     if (!notification) {
       throw new MedusaError(MedusaError.Types.INVALID_DATA, "Нет информации о уведомлении");
     }
-    if (notification.channel === "sms") {
-      throw new MedusaError(MedusaError.Types.INVALID_DATA, "SMS уведомления не поддерживаются");
-    }
 
     let emailContent: ReactNode;
 
