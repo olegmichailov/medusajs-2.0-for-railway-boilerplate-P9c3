@@ -1,27 +1,47 @@
 import { loadEnv, Modules, defineConfig } from '@medusajs/utils';
 import path from 'path';
+import {
+  ADMIN_CORS,
+  AUTH_CORS,
+  BACKEND_URL,
+  COOKIE_SECRET,
+  DATABASE_URL,
+  JWT_SECRET,
+  REDIS_URL,
+  SHOULD_DISABLE_ADMIN,
+  STORE_CORS,
+  STRIPE_API_KEY,
+  STRIPE_WEBHOOK_SECRET,
+  WORKER_MODE,
+  MINIO_ENDPOINT,
+  MINIO_ACCESS_KEY,
+  MINIO_SECRET_KEY,
+  MINIO_BUCKET,
+  MEILISEARCH_HOST,
+  MEILISEARCH_ADMIN_KEY
+} from 'lib/constants';
 
 // Загружаем переменные окружения
 loadEnv(process.env.NODE_ENV, process.cwd());
 
 const medusaConfig = {
   projectConfig: {
-    databaseUrl: process.env.DATABASE_URL,
+    databaseUrl: DATABASE_URL,
     databaseLogging: true,
-    redisUrl: process.env.REDIS_URL,
-    workerMode: process.env.WORKER_MODE,
+    redisUrl: REDIS_URL,
+    workerMode: WORKER_MODE,
     http: {
-      adminCors: process.env.ADMIN_CORS,
-      authCors: process.env.AUTH_CORS,
-      storeCors: process.env.STORE_CORS,
-      jwtSecret: process.env.JWT_SECRET,
-      cookieSecret: process.env.COOKIE_SECRET,
+      adminCors: ADMIN_CORS,
+      authCors: AUTH_CORS,
+      storeCors: STORE_CORS,
+      jwtSecret: JWT_SECRET,
+      cookieSecret: COOKIE_SECRET
     },
-    storeName: process.env.STORE_NAME || 'Gmorkl Store',
+    storeName: process.env.STORE_NAME || 'Gmorkl Store'
   },
   admin: {
-    backendUrl: process.env.BACKEND_URL,
-    disable: process.env.SHOULD_DISABLE_ADMIN,
+    backendUrl: BACKEND_URL,
+    disable: SHOULD_DISABLE_ADMIN,
   },
   modules: [
     {
@@ -29,48 +49,42 @@ const medusaConfig = {
       resolve: '@medusajs/file',
       options: {
         providers: [
-          process.env.MINIO_ENDPOINT && process.env.MINIO_ACCESS_KEY && process.env.MINIO_SECRET_KEY
-            ? {
-                resolve: './src/modules/minio-file',
-                id: 'minio',
-                options: {
-                  endPoint: process.env.MINIO_ENDPOINT,
-                  accessKey: process.env.MINIO_ACCESS_KEY,
-                  secretKey: process.env.MINIO_SECRET_KEY,
-                  bucket: process.env.MINIO_BUCKET,
-                },
-              }
-            : {
-                resolve: '@medusajs/file-local',
-                id: 'local',
-                options: {
-                  upload_dir: 'static',
-                  backend_url: `${process.env.BACKEND_URL}/static`,
-                },
-              },
-        ],
-      },
+          ...(MINIO_ENDPOINT && MINIO_ACCESS_KEY && MINIO_SECRET_KEY ? [{
+            resolve: './src/modules/minio-file',
+            id: 'minio',
+            options: {
+              endPoint: MINIO_ENDPOINT,
+              accessKey: MINIO_ACCESS_KEY,
+              secretKey: MINIO_SECRET_KEY,
+              bucket: MINIO_BUCKET
+            }
+          }] : [{
+            resolve: '@medusajs/file-local',
+            id: 'local',
+            options: {
+              upload_dir: 'static',
+              backend_url: `${BACKEND_URL}/static`
+            }
+          }])
+        ]
+      }
     },
-    process.env.REDIS_URL
-      ? {
-          key: Modules.EVENT_BUS,
-          resolve: '@medusajs/event-bus-redis',
-          options: {
-            redisUrl: process.env.REDIS_URL,
-          },
+    ...(REDIS_URL ? [{
+      key: Modules.EVENT_BUS,
+      resolve: '@medusajs/event-bus-redis',
+      options: {
+        redisUrl: REDIS_URL
+      }
+    },
+    {
+      key: Modules.WORKFLOW_ENGINE,
+      resolve: '@medusajs/workflow-engine-redis',
+      options: {
+        redis: {
+          url: REDIS_URL,
         }
-      : null,
-    process.env.REDIS_URL
-      ? {
-          key: Modules.WORKFLOW_ENGINE,
-          resolve: '@medusajs/workflow-engine-redis',
-          options: {
-            redis: {
-              url: process.env.REDIS_URL,
-            },
-          },
-        }
-      : null,
+      }
+    }] : []),
     {
       key: Modules.NOTIFICATION,
       resolve: '@medusajs/notification',
@@ -86,35 +100,30 @@ const medusaConfig = {
             },
           },
         ],
-      },
+      }
     },
-    process.env.STRIPE_API_KEY && process.env.STRIPE_WEBHOOK_SECRET
-      ? {
-          key: Modules.PAYMENT,
-          resolve: '@medusajs/payment',
-          options: {
-            providers: [
-              {
-                resolve: '@medusajs/payment-stripe',
-                id: 'stripe',
-                options: {
-                  apiKey: process.env.STRIPE_API_KEY,
-                  webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
-                  webhookEndpoint: `${process.env.BACKEND_URL}/hooks/payments/stripe`,
-                  enableLogging: true,
-                },
-              },
-            ],
+    ...(STRIPE_API_KEY && STRIPE_WEBHOOK_SECRET ? [{
+      key: Modules.PAYMENT,
+      resolve: '@medusajs/payment',
+      options: {
+        providers: [
+          {
+            resolve: '@medusajs/payment-stripe',
+            id: 'stripe',
+            options: {
+              apiKey: STRIPE_API_KEY,
+              webhookSecret: STRIPE_WEBHOOK_SECRET,
+              webhookEndpoint: `${BACKEND_URL}/hooks/payments/stripe`,
+              enableLogging: true,
+            },
           },
-        }
-      : null,
-  ].filter(Boolean),
-  plugins: [],
+        ],
+      },
+    }] : [])
+  ],
+  plugins: []
 };
 
-console.log(
-  '🔍 Проверка загрузки провайдеров уведомлений:',
-  medusaConfig.modules.find((m) => m.key === Modules.NOTIFICATION)?.options?.providers
-);
+console.log("🔍 Проверка загрузки провайдеров уведомлений:", medusaConfig.modules.find(m => m.key === Modules.NOTIFICATION)?.options?.providers);
 
 export default defineConfig(medusaConfig);
