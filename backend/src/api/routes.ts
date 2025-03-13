@@ -3,6 +3,6 @@ import stripeWebhookHandler from "./hooks/payments/stripe"; // ✅ Этот им
 
 const router = Router();
 
-router.use("/hooks/payments/stripe", stripeWebhookHandler); // ✅ Убедись, что этот маршрут есть
+router.use("/hooks/payments/stripe", stripeWebhookHandler); // ✅ Обязательно
 
 export default router;
