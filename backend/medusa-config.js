@@ -18,9 +18,7 @@ import {
   MINIO_SECRET_KEY,
   MINIO_BUCKET,
   MEILISEARCH_HOST,
-  MEILISEARCH_ADMIN_KEY,
-  RESEND_API_KEY,
-  RESEND_FROM_EMAIL
+  MEILISEARCH_ADMIN_KEY
 } from 'lib/constants';
 
 // Загружаем переменные окружения
@@ -29,7 +27,7 @@ loadEnv(process.env.NODE_ENV, process.cwd());
 const medusaConfig = {
   projectConfig: {
     databaseUrl: DATABASE_URL,
-    databaseLogging: true, // Включено логирование БД
+    databaseLogging: true,
     redisUrl: REDIS_URL,
     workerMode: WORKER_MODE,
     http: {
@@ -92,15 +90,15 @@ const medusaConfig = {
       resolve: '@medusajs/notification',
       options: {
         providers: [
-          ...(RESEND_API_KEY && RESEND_FROM_EMAIL ? [{
+          {
             resolve: path.resolve(__dirname, './src/modules/email-notifications/services/resend'),
             id: 'resend',
             options: {
               channels: ['email'],
-              api_key: RESEND_API_KEY,
-              from: RESEND_FROM_EMAIL,
+              api_key: process.env.RESEND_API_KEY,
+              from: process.env.RESEND_FROM_EMAIL,
             },
-          }] : [])
+          },
         ],
       }
     },
@@ -115,8 +113,8 @@ const medusaConfig = {
             options: {
               apiKey: STRIPE_API_KEY,
               webhookSecret: STRIPE_WEBHOOK_SECRET,
-              webhookEndpoint: `${BACKEND_URL}/api/webhooks/stripe`, // ✅ Исправлен путь
-              enableLogging: true, // 🔥 Включаем логирование Stripe событий
+              webhookEndpoint: `${BACKEND_URL}/hooks/payments/stripe`,
+              enableLogging: true,
             },
           },
         ],
@@ -126,10 +124,6 @@ const medusaConfig = {
   plugins: []
 };
 
-// 🔥 Проверка загрузки Resend
 console.log("🔍 Проверка загрузки провайдеров уведомлений:", medusaConfig.modules.find(m => m.key === Modules.NOTIFICATION)?.options?.providers);
-
-// 🔥 Проверка пути к Stripe Webhook
-console.log("✅ Stripe webhook URL:", `${BACKEND_URL}/api/webhooks/stripe`);
 
 export default defineConfig(medusaConfig);
