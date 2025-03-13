@@ -1,8 +1,9 @@
 import { Router } from "express";
-import stripeWebhookHandler from "./hooks/payments/stripe"; // ✅ Этот импорт должен быть
+import stripeWebhookHandler from "./hooks/payments/stripe";
 
 const router = Router();
 
-router.use("/hooks/payments/stripe", stripeWebhookHandler); // ✅ Обязательно
+// Stripe Webhook
+router.use("/hooks/payments/stripe", stripeWebhookHandler);
 
 export default router;
