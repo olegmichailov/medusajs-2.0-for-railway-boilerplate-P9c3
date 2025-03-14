@@ -9,6 +9,8 @@ import {
   REDIS_URL,
   RESEND_API_KEY,
   RESEND_FROM_EMAIL,
+  SENDGRID_API_KEY,
+  SENDGRID_FROM_EMAIL,
   SHOULD_DISABLE_ADMIN,
   STORE_CORS,
   STRIPE_API_KEY,
@@ -22,13 +24,12 @@ import {
   MEILISEARCH_ADMIN_KEY
 } from 'lib/constants';
 
-// Загружаем переменные окружения
 loadEnv(process.env.NODE_ENV, process.cwd());
 
 const medusaConfig = {
   projectConfig: {
     databaseUrl: DATABASE_URL,
-    databaseLogging: true, // Включено логирование БД
+    databaseLogging: false,
     redisUrl: REDIS_URL,
     workerMode: WORKER_MODE,
     http: {
@@ -37,8 +38,7 @@ const medusaConfig = {
       storeCors: STORE_CORS,
       jwtSecret: JWT_SECRET,
       cookieSecret: COOKIE_SECRET
-    },
-    storeName: process.env.STORE_NAME || 'Gmorkl Store'
+    }
   },
   admin: {
     backendUrl: BACKEND_URL,
@@ -57,7 +57,7 @@ const medusaConfig = {
               endPoint: MINIO_ENDPOINT,
               accessKey: MINIO_ACCESS_KEY,
               secretKey: MINIO_SECRET_KEY,
-              bucket: MINIO_BUCKET
+              bucket: MINIO_BUCKET // Optional, default: medusa-media
             }
           }] : [{
             resolve: '@medusajs/file-local',
@@ -86,13 +86,22 @@ const medusaConfig = {
         }
       }
     }] : []),
-    {
+    ...(SENDGRID_API_KEY && SENDGRID_FROM_EMAIL || RESEND_API_KEY && RESEND_FROM_EMAIL ? [{
       key: Modules.NOTIFICATION,
       resolve: '@medusajs/notification',
       options: {
         providers: [
+          ...(SENDGRID_API_KEY && SENDGRID_FROM_EMAIL ? [{
+            resolve: '@medusajs/notification-sendgrid',
+            id: 'sendgrid',
+            options: {
+              channels: ['email'],
+              api_key: SENDGRID_API_KEY,
+              from: SENDGRID_FROM_EMAIL,
+            }
+          }] : []),
           ...(RESEND_API_KEY && RESEND_FROM_EMAIL ? [{
-            resolve: './src/modules/email-notifications/services/resend', // 🔥 Должен быть файл `resend.ts`
+            resolve: './src/modules/email-notifications',
             id: 'resend',
             options: {
               channels: ['email'],
@@ -102,7 +111,7 @@ const medusaConfig = {
           }] : []),
         ]
       }
-    },
+    }] : []),
     ...(STRIPE_API_KEY && STRIPE_WEBHOOK_SECRET ? [{
       key: Modules.PAYMENT,
       resolve: '@medusajs/payment',
@@ -114,21 +123,33 @@ const medusaConfig = {
             options: {
               apiKey: STRIPE_API_KEY,
               webhookSecret: STRIPE_WEBHOOK_SECRET,
-              webhookEndpoint: `${BACKEND_URL}/hooks/payments/stripe`, // ✅ Убедись, что этот эндпоинт зарегистрирован в Stripe
-              enableLogging: true, // 🔥 Включаем логирование Stripe событий
             },
           },
         ],
       },
     }] : [])
   ],
-  plugins: []
+  plugins: [
+  ...(MEILISEARCH_HOST && MEILISEARCH_ADMIN_KEY ? [{
+      resolve: '@rokmohar/medusa-plugin-meilisearch',
+      options: {
+        config: {
+          host: MEILISEARCH_HOST,
+          apiKey: MEILISEARCH_ADMIN_KEY
+        },
+        settings: {
+          products: {
+            indexSettings: {
+              searchableAttributes: ['title', 'description', 'variant_sku'],
+              displayedAttributes: ['id', 'title', 'description', 'variant_sku', 'thumbnail', 'handle'],
+            },
+            primaryKey: 'id',
+          }
+        }
+      }
+    }] : [])
+  ]
 };
 
-// 🔥 Отладка Resend
-console.log("🔍 Loaded notification providers:", JSON.stringify(medusaConfig.modules.find(m => m.key === Modules.NOTIFICATION), null, 2));
-
-// 🔥 Отладка Stripe
-console.log("✅ Stripe webhook URL:", `${BACKEND_URL}/hooks/payments/stripe`);
-
+console.log(JSON.stringify(medusaConfig, null, 2));
 export default defineConfig(medusaConfig);
